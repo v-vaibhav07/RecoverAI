@@ -79,6 +79,543 @@ AI Predictions and AI Decisions are not separate CRUD resources — they render 
 
 ---
 
+## Database Schema (ER Diagram)
+
+The database runs on **PostgreSQL via Supabase**, modeled with **Prisma**. It's built around one core idea: every failed payment becomes a `recovery_case`, and every AI agent action, prediction, and decision made about that case is fully logged and traceable back to it.
+
+```mermaid
+erDiagram
+    MERCHANTS ||--o{ PROFILES : has
+    MERCHANTS ||--o| MERCHANT_SETTINGS : configures
+    MERCHANTS ||--o{ CUSTOMERS : owns
+    MERCHANTS ||--o{ CUSTOMER_SEGMENTS : defines
+    MERCHANTS ||--o{ PRODUCTS : sells
+    MERCHANTS ||--o{ ORDERS : has
+    MERCHANTS ||--o{ CHECKOUT_SESSIONS : has
+    MERCHANTS ||--o{ TRANSACTIONS : has
+    MERCHANTS ||--o{ PAYMENTS : has
+    MERCHANTS ||--o{ PAYMENT_FAILURES : has
+    MERCHANTS ||--o{ SUBSCRIPTIONS : has
+    MERCHANTS ||--o{ RECOVERY_STRATEGIES : owns
+    MERCHANTS ||--o{ RECOVERY_CASES : has
+    MERCHANTS ||--o{ RECOVERY_ACTIONS : has
+    MERCHANTS ||--o{ AI_PREDICTIONS : has
+    MERCHANTS ||--o{ AI_DECISIONS : has
+    MERCHANTS ||--o{ CAMPAIGNS : runs
+    MERCHANTS ||--o{ NOTIFICATIONS : sends
+    MERCHANTS ||--o{ EVENTS : emits
+    MERCHANTS ||--o{ DAILY_REVENUE_METRICS : tracks
+    MERCHANTS ||--o{ EXPERIMENTS : runs
+    MERCHANTS ||--o{ AUDIT_LOGS : logs
+
+    CUSTOMERS ||--o{ CUSTOMER_PAYMENT_METHODS : has
+    CUSTOMERS ||--o{ ORDERS : places
+    CUSTOMERS ||--o{ CHECKOUT_SESSIONS : starts
+    CUSTOMERS ||--o{ TRANSACTIONS : makes
+    CUSTOMERS ||--o{ PAYMENTS : makes
+    CUSTOMERS ||--o{ SUBSCRIPTIONS : holds
+    CUSTOMERS ||--o{ RECOVERY_CASES : involved_in
+    CUSTOMERS ||--o{ NOTIFICATIONS : receives
+    CUSTOMERS ||--o{ EXPERIMENT_ASSIGNMENTS : assigned_to
+
+    PRODUCTS ||--o{ SUBSCRIPTIONS : subscribed_as
+
+    ORDERS ||--o{ CHECKOUT_SESSIONS : linked_to
+    ORDERS ||--o{ TRANSACTIONS : linked_to
+
+    CHECKOUT_SESSIONS ||--o{ RECOVERY_CASES : source_of
+
+    TRANSACTIONS ||--o{ PAYMENTS : linked_to
+
+    CUSTOMER_PAYMENT_METHODS ||--o{ PAYMENTS : used_for
+    CUSTOMER_PAYMENT_METHODS ||--o{ PAYMENT_ATTEMPTS : used_for
+
+    PAYMENTS ||--o{ PAYMENT_ATTEMPTS : has
+    PAYMENTS ||--o{ PAYMENT_FAILURES : has
+    PAYMENTS ||--o{ SUBSCRIPTION_PAYMENTS : settles
+    PAYMENTS ||--o{ RECOVERY_CASES : source_of
+
+    PAYMENT_ATTEMPTS ||--o{ PAYMENT_FAILURES : caused
+
+    SUBSCRIPTIONS ||--o{ SUBSCRIPTION_PAYMENTS : bills
+
+    SUBSCRIPTION_PAYMENTS ||--o{ RECOVERY_CASES : source_of
+
+    RECOVERY_STRATEGIES ||--o{ RECOVERY_ACTIONS : guides
+    RECOVERY_STRATEGIES ||--o{ CAMPAIGNS : powers
+    RECOVERY_STRATEGIES ||--o{ EXPERIMENT_VARIANTS : tested_as
+
+    RECOVERY_CASES ||--o{ RECOVERY_ACTIONS : triggers
+    RECOVERY_CASES ||--o{ AI_PREDICTIONS : scored_by
+    RECOVERY_CASES ||--o{ AI_DECISIONS : decided_by
+    RECOVERY_CASES ||--o{ CAMPAIGN_ACTIONS : targeted_by
+    RECOVERY_CASES ||--o{ NOTIFICATIONS : generates
+    RECOVERY_CASES ||--o{ EXPERIMENT_ASSIGNMENTS : part_of
+
+    AI_PREDICTIONS ||--o{ AI_DECISIONS : informs
+
+    AI_DECISIONS ||--o{ AI_EXPLANATIONS : explained_by
+
+    CAMPAIGNS ||--o{ CAMPAIGN_ACTIONS : contains
+
+    EXPERIMENTS ||--o{ EXPERIMENT_VARIANTS : has
+    EXPERIMENTS ||--o{ EXPERIMENT_ASSIGNMENTS : has
+    EXPERIMENTS ||--o{ EXPERIMENT_RESULTS : has
+    EXPERIMENT_VARIANTS ||--o{ EXPERIMENT_ASSIGNMENTS : assigned_as
+    EXPERIMENT_VARIANTS ||--o{ EXPERIMENT_RESULTS : scored_as
+
+    MERCHANTS {
+        uuid id PK
+        string business_name
+        string legal_name
+        string email UK
+        string country
+        string currency
+        string timezone
+        enum status
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    PROFILES {
+        uuid id PK, FK
+        uuid merchant_id FK
+        string full_name
+        string email
+        enum role
+        enum status
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    MERCHANT_SETTINGS {
+        uuid id PK
+        uuid merchant_id FK, UK
+        boolean recovery_enabled
+        boolean ai_enabled
+        int max_retry_attempts
+        int default_retry_delay_minutes
+        boolean notification_enabled
+        jsonb settings
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    CUSTOMERS {
+        uuid id PK
+        uuid merchant_id FK
+        string external_customer_id
+        string name
+        string email
+        string phone
+        string country
+        decimal lifetime_value
+        int total_transactions
+        int successful_payments
+        int failed_payments
+        int recovered_payments
+        decimal total_recovered_amount
+        enum status
+        jsonb metadata
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    CUSTOMER_PAYMENT_METHODS {
+        uuid id PK
+        uuid customer_id FK
+        string type
+        string provider
+        string last_four
+        int expiry_month
+        int expiry_year
+        boolean is_default
+        enum status
+        jsonb metadata
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    CUSTOMER_SEGMENTS {
+        uuid id PK
+        uuid merchant_id FK
+        string name
+        text description
+        jsonb criteria
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    PRODUCTS {
+        uuid id PK
+        uuid merchant_id FK
+        string name
+        text description
+        decimal price
+        string currency
+        enum status
+        jsonb metadata
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    ORDERS {
+        uuid id PK
+        uuid merchant_id FK
+        uuid customer_id FK
+        string order_number
+        decimal total_amount
+        string currency
+        string status
+        jsonb metadata
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    CHECKOUT_SESSIONS {
+        uuid id PK
+        uuid merchant_id FK
+        uuid customer_id FK
+        uuid order_id FK
+        decimal amount
+        string currency
+        enum status
+        timestamp started_at
+        timestamp last_activity_at
+        timestamp completed_at
+        timestamp abandoned_at
+        timestamp expires_at
+        jsonb metadata
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    TRANSACTIONS {
+        uuid id PK
+        uuid merchant_id FK
+        uuid customer_id FK
+        uuid order_id FK
+        string external_transaction_id
+        decimal amount
+        string currency
+        enum type
+        enum status
+        jsonb metadata
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    PAYMENTS {
+        uuid id PK
+        uuid merchant_id FK
+        uuid customer_id FK
+        uuid transaction_id FK
+        uuid payment_method_id FK
+        decimal amount
+        string currency
+        string provider
+        string provider_payment_id
+        enum status
+        string failure_code
+        text failure_message
+        jsonb metadata
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    PAYMENT_ATTEMPTS {
+        uuid id PK
+        uuid payment_id FK
+        int attempt_number
+        decimal amount
+        uuid payment_method_id FK
+        string provider
+        enum status
+        string failure_code
+        enum failure_category
+        jsonb provider_response
+        timestamp started_at
+        timestamp completed_at
+        timestamp created_at
+    }
+
+    PAYMENT_FAILURES {
+        uuid id PK
+        uuid payment_id FK
+        uuid payment_attempt_id FK
+        uuid merchant_id FK
+        string failure_code
+        enum failure_category
+        text failure_reason
+        boolean retryable
+        enum severity
+        string provider
+        jsonb metadata
+        timestamp created_at
+    }
+
+    SUBSCRIPTIONS {
+        uuid id PK
+        uuid merchant_id FK
+        uuid customer_id FK
+        uuid product_id FK
+        string external_subscription_id
+        string plan_name
+        decimal amount
+        string currency
+        enum billing_interval
+        enum status
+        timestamp start_date
+        timestamp current_period_start
+        timestamp current_period_end
+        timestamp cancelled_at
+        jsonb metadata
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    SUBSCRIPTION_PAYMENTS {
+        uuid id PK
+        uuid subscription_id FK
+        uuid payment_id FK
+        string billing_period
+        decimal amount
+        string currency
+        enum status
+        timestamp due_date
+        timestamp paid_at
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    RECOVERY_STRATEGIES {
+        uuid id PK
+        uuid merchant_id FK
+        string name
+        enum type
+        text description
+        jsonb configuration
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    RECOVERY_CASES {
+        uuid id PK
+        uuid merchant_id FK
+        uuid customer_id FK
+        uuid payment_id FK
+        uuid subscription_payment_id FK
+        uuid checkout_session_id FK
+        decimal original_amount
+        decimal recoverable_amount
+        decimal recovered_amount
+        decimal recovery_score
+        decimal recovery_probability
+        decimal expected_recovery_amount
+        enum status
+        enum priority
+        timestamp created_at
+        timestamp updated_at
+        timestamp closed_at
+    }
+
+    RECOVERY_ACTIONS {
+        uuid id PK
+        uuid merchant_id FK
+        uuid recovery_case_id FK
+        uuid strategy_id FK
+        enum action_type
+        enum status
+        int attempt_number
+        timestamp scheduled_at
+        timestamp started_at
+        timestamp completed_at
+        text result
+        text error
+        jsonb metadata
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    AI_PREDICTIONS {
+        uuid id PK
+        uuid merchant_id FK
+        uuid recovery_case_id FK
+        string model_provider
+        string model_name
+        string model_version
+        decimal recovery_score
+        decimal recovery_probability
+        decimal expected_recovery_amount
+        enum confidence
+        jsonb prediction_reasons
+        jsonb input_snapshot
+        timestamp created_at
+    }
+
+    AI_DECISIONS {
+        uuid id PK
+        uuid merchant_id FK
+        uuid recovery_case_id FK
+        uuid prediction_id FK
+        string agent_name
+        string decision_type
+        enum recommended_action
+        text reasoning_summary
+        enum confidence
+        jsonb structured_decision
+        timestamp created_at
+    }
+
+    AI_EXPLANATIONS {
+        uuid id PK
+        uuid ai_decision_id FK
+        text summary
+        jsonb positive_factors
+        jsonb negative_factors
+        jsonb reason_codes
+        timestamp created_at
+    }
+
+    CAMPAIGNS {
+        uuid id PK
+        uuid merchant_id FK
+        string name
+        text description
+        enum status
+        jsonb target_criteria
+        uuid strategy_id FK
+        timestamp start_date
+        timestamp end_date
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    CAMPAIGN_ACTIONS {
+        uuid id PK
+        uuid campaign_id FK
+        uuid recovery_case_id FK
+        string action
+        enum status
+        text result
+        timestamp created_at
+    }
+
+    NOTIFICATIONS {
+        uuid id PK
+        uuid merchant_id FK
+        uuid customer_id FK
+        uuid recovery_case_id FK
+        enum channel
+        string template
+        string recipient
+        text subject
+        text content
+        enum status
+        timestamp sent_at
+        timestamp delivered_at
+        timestamp failed_at
+        string provider_id
+        jsonb metadata
+        timestamp created_at
+    }
+
+    EVENTS {
+        uuid id PK
+        uuid merchant_id FK
+        string event_type
+        string aggregate_type
+        uuid aggregate_id
+        jsonb payload
+        enum status
+        boolean processed
+        timestamp processed_at
+        text error
+        timestamp created_at
+    }
+
+    DAILY_REVENUE_METRICS {
+        uuid id PK
+        uuid merchant_id FK
+        date metric_date
+        decimal total_revenue
+        decimal failed_revenue
+        decimal recoverable_revenue
+        decimal recovered_revenue
+        decimal revenue_at_risk
+        int total_payments
+        int failed_payments
+        int recovered_payments
+        decimal recovery_rate
+        decimal payment_recovery_rate
+        bigint average_recovery_time_seconds
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    EXPERIMENTS {
+        uuid id PK
+        uuid merchant_id FK
+        string name
+        text description
+        enum status
+        timestamp start_date
+        timestamp end_date
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    EXPERIMENT_VARIANTS {
+        uuid id PK
+        uuid experiment_id FK
+        string name
+        uuid strategy_id FK
+        decimal traffic_percentage
+        timestamp created_at
+    }
+
+    EXPERIMENT_ASSIGNMENTS {
+        uuid id PK
+        uuid experiment_id FK
+        uuid variant_id FK
+        uuid customer_id FK
+        uuid recovery_case_id FK
+        timestamp created_at
+    }
+
+    EXPERIMENT_RESULTS {
+        uuid id PK
+        uuid experiment_id FK
+        uuid variant_id FK
+        int total_cases
+        int successful_recoveries
+        decimal recoverable_amount
+        decimal recovered_amount
+        decimal recovery_rate
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    AUDIT_LOGS {
+        uuid id PK
+        uuid merchant_id FK
+        uuid user_id FK
+        string action
+        string entity_type
+        uuid entity_id
+        jsonb old_values
+        jsonb new_values
+        inet ip_address
+        text user_agent
+        timestamp created_at
+    }
+```
+
+**Key flow through the schema:** a `payment` fails → a `payment_attempt` and `payment_failure` record why → this opens a `recovery_case` → an `ai_prediction` scores its recovery likelihood → an `ai_decision` (backed by an `ai_explanation`) picks a `recovery_action` (often driven by a `recovery_strategy` and grouped into a `campaign`) → the action triggers a `notification` to the customer → the outcome updates the case, and rolls up into `daily_revenue_metrics` for reporting. `experiments` and `experiment_variants` let merchants A/B test different recovery strategies against each other, with `experiment_results` tracking which one wins.
+
+---
+
 ## Setup
 
 ### 1. Backend
