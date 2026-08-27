@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link
+  rel="icon"
+  type="image/png"
+  href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAATlBMVEVHcEwzlf8zlv8zlf8zlf8vgLUzlf8zl/8thugzlf8zlf8zlf82nv8zlf80mP8zlf8CEjcGJVMHJlQHJlQEG0cGJVQHJlQFI1AFI1AHJlTMyDQOAAAAGnRSTlMAlUD/qwS+Vg3R4HAchy7uJIro/z2mvV51143DSqsAAADKSURBVHgBfdGHFYMADANRBdE7mLr/oonTaDZ/Ar0Tbj1wK2CIG1FMJvAlfEnhSTO+5PAUpPI2lhk/Apgq/sBS5/zJzDTcFLhqqPKcqrbaqQpUdPY1JWoqq3NGFmhReBNSZiW6HhmdzkmBtpcOVA0snYgMgTthEIWH0zkaRU3IqSKczPKxRGbndJKvNvnW2otm+UN4ndCu8jdanSfZzCVVjD3ZiYzOrWx6xFTlKd/9hFU2g3W17KCiSrCJBtms386pN2EBVW5OsDs/AfxPElk6+vDgAAAAAElFTkSuQmCC"
+/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RecoverAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <script>
+  (function () {
+    try {
+      var theme = localStorage.getItem("recoverai-theme") || "light";
+      document.documentElement.classList.toggle("dark", theme === "dark");
+      document.documentElement.style.colorScheme = theme;
+    } catch (_) {}
+  })();
+</script>
+<body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
