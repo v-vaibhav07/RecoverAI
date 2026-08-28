@@ -1,0 +1,31 @@
+# node_modules
+# dist
+# .env
+# *.local
+
+
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Local environment files
+*.local
+
+# Logs
+*.log
+
+# Coverage
+coverage/
+
+# OS files
+.DS_Store
+Thumbs.db
