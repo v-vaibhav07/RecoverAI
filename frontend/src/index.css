@@ -1,0 +1,238 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* ---- Razorpay-inspired theme tokens ---- */
+  /* Main content surfaces: light/white, like Razorpay's dashboard */
+  --color-bg: #F5F7FA;
+  --color-surface: #FFFFFF;
+  --color-elevated: #F1F4F9;
+  --color-border: #E4E9F1;
+
+  --color-text-primary: #101828;
+  --color-text-secondary: #475467;
+  --color-text-muted: #94A3B8;
+
+  /* Razorpay brand blue — Dodger Blue */
+  --color-brand: #3395FF;
+  --color-brand-light: #5FACFF;
+  --color-brand-dark: #1A7AE0;
+  --color-brand-50: #EAF4FF;
+  --color-brand-100: #D3E9FF;
+
+  /* Dark mode keeps the same RecoverAI blue brand while changing only surfaces/text. */
+  --color-focus-ring: #3395FF;
+
+  /* Deep navy sidebar */
+  --color-navy: #0C2651;
+  --color-navy-elevated: #123268;
+  --color-navy-border: #1D3E75;
+  --color-navy-text: #E7EFFC;
+  --color-navy-muted: #93A9CE;
+
+  /* Shared motion tokens (consumed by src/lib/motion.ts) */
+  --ease-snappy: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-bg text-text-secondary antialiased;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+input,
+textarea,
+select {
+  color-scheme: light;
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* RecoverAI AI Pulse Loader                                                  */
+/* -------------------------------------------------------------------------- */
+
+.recover-loader {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+}
+
+.recover-loader-core {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58%;
+  height: 58%;
+  border-radius: 9999px;
+  color: var(--color-brand);
+  font-weight: 600;
+  line-height: 1;
+  transform-origin: center;
+  animation: recover-pulse 2.4s ease-in-out infinite;
+  text-shadow: 0 0 16px rgb(51 149 255 / 0.28);
+}
+
+.recover-loader::after {
+  content: "";
+  position: absolute;
+  inset: 19%;
+  z-index: 1;
+  border-radius: 9999px;
+  background: rgb(51 149 255 / 0.08);
+  filter: blur(8px);
+  animation: recover-glow 2.4s ease-in-out infinite;
+}
+
+.recover-loader-ring {
+  position: absolute;
+  inset: 21%;
+  z-index: 2;
+  border: 1px solid rgb(51 149 255 / 0.24);
+  border-radius: 9999px;
+  opacity: 0;
+  transform: scale(0.5);
+  animation: recover-ring 3.6s cubic-bezier(0.22, 0.61, 0.36, 1) infinite;
+  will-change: transform, opacity;
+}
+
+.recover-loader-ring-1 { animation-delay: 0s; }
+.recover-loader-ring-2 { animation-delay: 1.2s; }
+.recover-loader-ring-3 { animation-delay: 2.4s; }
+
+@keyframes recover-pulse {
+  0%, 100% {
+    transform: scale(0.95);
+    opacity: 0.78;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+@keyframes recover-glow {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes recover-ring {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  12% {
+    opacity: 0.48;
+  }
+  72% {
+    opacity: 0.08;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recover-loader-core,
+  .recover-loader::after {
+    animation: recover-pulse-static 2.8s ease-in-out infinite;
+  }
+
+  .recover-loader-ring {
+    animation: none;
+    opacity: 0.12;
+    transform: scale(1);
+  }
+}
+
+@keyframes recover-pulse-static {
+  0%, 100% { opacity: 0.72; transform: scale(0.98); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Dark mode                                                                  */
+/* -------------------------------------------------------------------------- */
+
+html.dark {
+  color-scheme: dark;
+
+  --color-bg: #0B1220;
+  --color-surface: #111A2B;
+  --color-elevated: #172235;
+  --color-border: #24324A;
+
+  --color-text-primary: #F4F7FB;
+  --color-text-secondary: #B5C0D0;
+  --color-text-muted: #7F8DA3;
+
+  /* Keep the existing RecoverAI blue identity in dark mode. */
+  --color-brand: #3395FF;
+  --color-brand-light: #66B0FF;
+  --color-brand-dark: #1A7AE0;
+  --color-brand-50: #102A49;
+  --color-brand-100: #173C64;
+
+  --color-navy: #071A38;
+  --color-navy-elevated: #0D2850;
+  --color-navy-border: #1B3E70;
+  --color-navy-text: #EAF2FF;
+  --color-navy-muted: #8FA9D1;
+}
+
+html.dark body {
+  background: var(--color-bg);
+}
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  color-scheme: dark;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
